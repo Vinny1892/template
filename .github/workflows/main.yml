@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main"]
+  release:
+
+jobs:
+  build:
+    #needs: test
+    runs-on: ubuntu-latest
+    env:
+      PATH_DOCKERFILE: docker/dockerfile.prod
+      CONTEXT: .
+      IMAGE_NAME: template
+      OWNER: seila
+    steps:
+      - name: Configure Git
+        uses: actions/checkout@v2
+
+      - uses: azure/docker-login@v1
+        with:
+          login-server: ghcr.io
+          username: ${{ secrets.GH_PACKAGES_USER }}
+          password: ${{ secrets.GH_PACKAGES_TOKEN }}
+      
+      - name: build docker image
+        run: |
+          docker build -t ghcr.io/${{ env.OWNER }}/${{ env.IMAGE_NAME }} -f ${{ env.PATH_DOCKERFILE }} ${{ env.CONTEXT }}
+      
+      - name: push docker image
+        run: |
+                docker push ghcr.ioo/${{ env.OWNER }}/${{ env.IMAGE_NAME }}:latest
+                docker push ghcr.io/${{ env.OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+
